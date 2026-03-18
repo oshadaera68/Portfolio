@@ -18,6 +18,7 @@ import {
   Briefcase,
   GraduationCap
 } from 'lucide-react';
+import about from '../assets/about.jpg';
 
 // --- Theme Context ---
 
@@ -279,7 +280,7 @@ const About = () => {
           >
             <div className="aspect-square rounded-3xl overflow-hidden grayscale hover:grayscale-0 transition-all duration-700 border border-[var(--card-border)]">
               <img 
-                src="https://picsum.photos/seed/oshada/800/800" 
+                src={about} 
                 alt="Oshada Eranga" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
