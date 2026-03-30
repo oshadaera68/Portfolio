@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { motion, AnimatePresence, useScroll, useSpring } from 'motion/react';
+import { motion, AnimatePresence, useScroll, useSpring, useMotionValue } from 'motion/react';
 import { 
   Github, 
   Linkedin, 
@@ -18,7 +18,7 @@ import {
   Briefcase,
   GraduationCap
 } from 'lucide-react';
-import about from '../assets/about.jpg';
+import about from '../assets/about.jpg'; 
 
 // --- Theme Context ---
 
@@ -28,6 +28,93 @@ const ThemeContext = createContext({
 });
 
 const useTheme = () => useContext(ThemeContext);
+
+// --- Custom Cursor ---
+
+const CustomCursor = () => {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const [isHovering, setIsHovering] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+      if (!isVisible) setIsVisible(true);
+    };
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const isClickable = 
+        target.tagName === 'A' || 
+        target.tagName === 'BUTTON' || 
+        target.closest('button') || 
+        target.closest('a') ||
+        window.getComputedStyle(target).cursor === 'pointer';
+      
+      setIsHovering(isClickable);
+    };
+
+    const handleMouseLeave = () => setIsVisible(false);
+    const handleMouseEnter = () => setIsVisible(true);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseover', handleMouseOver);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseenter', handleMouseEnter);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseover', handleMouseOver);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mouseenter', handleMouseEnter);
+    };
+  }, [isVisible, mouseX, mouseY]);
+
+  // Spring animations for smoother movement
+  const springConfig = { damping: 25, stiffness: 200, mass: 0.5 };
+  const springX = useSpring(mouseX, springConfig);
+  const springY = useSpring(mouseY, springConfig);
+
+  if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
+    return null;
+  }
+
+  return (
+    <div className={`fixed inset-0 pointer-events-none z-[9999] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Outer Bordered Circle */}
+      <motion.div
+        className="fixed top-0 left-0 w-10 h-10 border border-emerald-500 rounded-full"
+        style={{
+          x: springX,
+          y: springY,
+          translateX: '-50%',
+          translateY: '-50%',
+        }}
+        animate={{
+          scale: isHovering ? 1.5 : 1,
+          backgroundColor: isHovering ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+        }}
+        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+      />
+      
+      {/* Inner Colored Circle */}
+      <motion.div
+        className="fixed top-0 left-0 w-2 h-2 bg-emerald-500 rounded-full"
+        style={{
+          x: mouseX,
+          y: mouseY,
+          translateX: '-50%',
+          translateY: '-50%',
+        }}
+        animate={{
+          scale: isHovering ? 0.5 : 1,
+        }}
+      />
+    </div>
+  );
+};
 
 // --- Components ---
 
@@ -280,7 +367,7 @@ const About = () => {
           >
             <div className="aspect-square rounded-3xl overflow-hidden grayscale hover:grayscale-0 transition-all duration-700 border border-[var(--card-border)]">
               <img 
-                src={about} 
+                src={about}
                 alt="Oshada Eranga" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
@@ -653,6 +740,7 @@ export default function App() {
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+      <CustomCursor />
       <AnimatePresence mode="wait">
         {isLoading && <SplashScreen onComplete={() => setIsLoading(false)} />}
       </AnimatePresence>
